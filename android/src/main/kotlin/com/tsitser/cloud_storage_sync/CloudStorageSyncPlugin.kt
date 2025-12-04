@@ -53,8 +53,10 @@ class CloudStorageSyncPlugin :
                     "error" to "Cloud storage not yet supported on Android"
                 ))
             }
-            "isFileFullyDownloaded" -> {
-                result.success(false)
+            "getFileDownloadStatus" -> {
+                // Android support will be added in future versions
+                // Возвращаем null - Dart код обработает это как "платформа не поддерживается"
+                result.success(null)
             }
             else -> {
                 result.notImplemented()

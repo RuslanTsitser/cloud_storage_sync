@@ -25,36 +25,86 @@ import Flutter
         return FileManager.default.ubiquityIdentityToken != nil
     }
 
-    /// Проверяет, полностью ли загружен файл из iCloud
-    /// Возвращает true если файл полностью скачан и доступен локально
-    @objc public static func isFileFullyDownloaded(path: String) -> Bool {
+    /// Получает информацию о статусе загрузки файла из iCloud
+    /// Возвращает словарь с информацией:
+    /// - "status": "current" | "downloaded" | "notDownloaded" | "local" | "notFound" | "error"
+    /// - "isDownloading": Bool - идет ли загрузка сейчас
+    /// - "downloadRequested": Bool - была ли запрошена загрузка
+    /// - "isUbiquitous": Bool - является ли файл iCloud-файлом
+    /// - "fileSize": Int64 - размер файла (если доступен)
+    @objc public static func getFileDownloadStatus(path: String) -> [String: Any] {
         let fileURL = URL(fileURLWithPath: path)
         let fileManager = FileManager.default
 
+        // Проверяем существование файла
         guard fileManager.fileExists(atPath: fileURL.path) else {
-            return false
+            return [
+                "status": "notFound",
+                "isDownloading": false,
+                "downloadRequested": false,
+                "isUbiquitous": false,
+                "fileSize": 0
+            ]
         }
 
-        // Для локальных файлов (не iCloud) считаем, что они полностью доступны
-        guard fileManager.isUbiquitousItem(at: fileURL) else {
-            return true
+        // Для локальных файлов (не iCloud) возвращаем "local"
+        let isUbiquitous = fileManager.isUbiquitousItem(at: fileURL)
+        guard isUbiquitous else {
+            // Получаем размер локального файла
+            var fileSize: Int64 = 0
+            if let attrs = try? fileManager.attributesOfItem(atPath: fileURL.path),
+               let size = attrs[.size] as? Int64 {
+                fileSize = size
+            }
+            return [
+                "status": "local",
+                "isDownloading": false,
+                "downloadRequested": false,
+                "isUbiquitous": false,
+                "fileSize": fileSize
+            ]
         }
 
         do {
-            // Используем только ubiquitousItemDownloadingStatusKey - он доступен в iOS
-            let resourceValues = try fileURL.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
+            // Получаем все доступные ключи для iCloud файла
+            let resourceValues = try fileURL.resourceValues(forKeys: [
+                .ubiquitousItemDownloadingStatusKey,
+                .ubiquitousItemIsDownloadingKey,
+                .ubiquitousItemDownloadRequestedKey,
+                .fileSizeKey
+            ])
 
-            if let status = resourceValues.ubiquitousItemDownloadingStatus {
-                // .current означает, что файл полностью загружен и актуален
-                // .notDownloaded - файл только в облаке (placeholder)
-                // .downloaded - файл загружен, но может быть не актуален
-                return status == URLUbiquitousItemDownloadingStatus.current
+            let isDownloading = resourceValues.ubiquitousItemIsDownloading ?? false
+            let downloadRequested = resourceValues.ubiquitousItemDownloadRequested ?? false
+            let fileSize = resourceValues.fileSize ?? 0
+
+            var status = "unknown"
+            if let downloadStatus = resourceValues.ubiquitousItemDownloadingStatus {
+                if downloadStatus == .current {
+                    status = "current"
+                } else if downloadStatus == .downloaded {
+                    status = "downloaded"
+                } else if downloadStatus == .notDownloaded {
+                    status = "notDownloaded"
+                }
             }
 
-            // Если статус недоступен, пробуем читать файл для проверки
-            return fileManager.isReadableFile(atPath: fileURL.path)
+            return [
+                "status": status,
+                "isDownloading": isDownloading,
+                "downloadRequested": downloadRequested,
+                "isUbiquitous": true,
+                "fileSize": fileSize
+            ]
         } catch {
-            return false
+            return [
+                "status": "error",
+                "isDownloading": false,
+                "downloadRequested": false,
+                "isUbiquitous": true,
+                "fileSize": 0,
+                "error": error.localizedDescription
+            ]
         }
     }
 }

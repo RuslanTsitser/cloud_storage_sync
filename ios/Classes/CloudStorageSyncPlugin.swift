@@ -18,7 +18,7 @@ public class CloudStorageSyncPlugin: NSObject, FlutterPlugin {
       } else {
         result(nil)
       }
-    case "isFileFullyDownloaded":
+    case "getFileDownloadStatus":
       guard
         let args = call.arguments as? [String: Any],
         let path = args["path"] as? String
@@ -32,7 +32,7 @@ public class CloudStorageSyncPlugin: NSObject, FlutterPlugin {
         )
         return
       }
-      result(ICloudService.isFileFullyDownloaded(path: path))
+      result(ICloudService.getFileDownloadStatus(path: path))
     default:
       result(FlutterMethodNotImplemented)
     }

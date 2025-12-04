@@ -1,4 +1,5 @@
 export 'cloud_storage_sync_platform_interface.dart';
+export 'src/cloud_storage_service.dart' show FileDownloadStatus, FileDownloadInfo;
 
 import 'src/cloud_storage_service.dart';
 import 'cloud_storage_sync_platform_interface.dart';
@@ -25,8 +26,8 @@ class CloudStorageSync {
     return service.getDocumentsDirectoryPath();
   }
 
-  /// Проверяет, полностью ли загружен файл из iCloud
-  Future<bool> isFileFullyDownloaded(String filePath) {
-    return service.isFileFullyDownloaded(filePath);
+  /// Получает информацию о статусе загрузки файла из iCloud
+  Future<FileDownloadInfo?> getFileDownloadStatus(String filePath) {
+    return service.getFileDownloadStatus(filePath);
   }
 }
