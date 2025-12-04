@@ -18,6 +18,21 @@ public class CloudStorageSyncPlugin: NSObject, FlutterPlugin {
       } else {
         result(nil)
       }
+    case "isFileFullyDownloaded":
+      guard
+        let args = call.arguments as? [String: Any],
+        let path = args["path"] as? String
+      else {
+        result(
+          FlutterError(
+            code: "invalid_arguments",
+            message: "Path argument is required",
+            details: nil
+          )
+        )
+        return
+      }
+      result(ICloudService.isFileFullyDownloaded(path: path))
     default:
       result(FlutterMethodNotImplemented)
     }

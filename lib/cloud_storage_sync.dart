@@ -24,4 +24,9 @@ class CloudStorageSync {
   Future<String?> getDocumentsDirectoryPath() {
     return service.getDocumentsDirectoryPath();
   }
+
+  /// Проверяет, полностью ли загружен файл из iCloud
+  Future<bool> isFileFullyDownloaded(String filePath) {
+    return service.isFileFullyDownloaded(filePath);
+  }
 }

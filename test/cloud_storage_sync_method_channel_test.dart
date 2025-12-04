@@ -15,6 +15,9 @@ void main() {
       if (methodCall.method == 'isCloudStorageAvailable') {
         return false;
       }
+      if (methodCall.method == 'isFileFullyDownloaded') {
+        return true;
+      }
       return null;
     });
   });
@@ -26,5 +29,12 @@ void main() {
   test('isCloudStorageAvailable', () async {
     final result = await platform.invokeMethod<bool>('isCloudStorageAvailable');
     expect(result, false);
+  });
+
+  test('isFileFullyDownloaded', () async {
+    final result = await platform.invokeMethod<bool>('isFileFullyDownloaded', <String, dynamic>{
+      'path': '/tmp/test.file',
+    });
+    expect(result, true);
   });
 }

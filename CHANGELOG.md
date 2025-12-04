@@ -1,3 +1,9 @@
+# Cloud Storage Sync
+
+## 0.0.2
+
+* Added `isFileFullyDownloaded` API to verify that iCloud documents are fully available locally
+
 ## 0.1.0
 
 * Initial release

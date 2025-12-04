@@ -11,6 +11,9 @@ class MockCloudStorageSyncPlatform
     if (method == 'isCloudStorageAvailable') {
       return Future.value(false as T);
     }
+    if (method == 'isFileFullyDownloaded') {
+      return Future.value(true as T);
+    }
     return Future.value(null);
   }
 }
@@ -28,5 +31,13 @@ void main() {
     CloudStorageSyncPlatform.instance = fakePlatform;
 
     expect(await cloudStorageSyncPlugin.isCloudStorageAvailable(), false);
+  });
+
+  test('isFileFullyDownloaded (non-iOS)', () async {
+    final cloudStorageSyncPlugin = CloudStorageSync.instance;
+    final fakePlatform = MockCloudStorageSyncPlatform();
+    CloudStorageSyncPlatform.instance = fakePlatform;
+
+    expect(await cloudStorageSyncPlugin.isFileFullyDownloaded('/tmp/file.json'), false);
   });
 }

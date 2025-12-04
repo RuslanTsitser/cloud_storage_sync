@@ -53,6 +53,9 @@ class CloudStorageSyncPlugin :
                     "error" to "Cloud storage not yet supported on Android"
                 ))
             }
+            "isFileFullyDownloaded" -> {
+                result.success(false)
+            }
             else -> {
                 result.notImplemented()
             }

@@ -9,6 +9,9 @@ abstract class CloudStorageService {
 
   /// Получает путь к директории документов в облаке
   Future<String?> getDocumentsDirectoryPath();
+
+  /// Проверяет, полностью ли скачан файл по указанному пути
+  Future<bool> isFileFullyDownloaded(String filePath);
 }
 
 /// Реализация CloudStorageService
@@ -42,6 +45,24 @@ class CloudStorageServiceImpl implements CloudStorageService {
       return result;
     } catch (e) {
       return null;
+    }
+  }
+
+  @override
+  Future<bool> isFileFullyDownloaded(String filePath) async {
+    if (!Platform.isIOS) {
+      return false;
+    }
+    if (filePath.isEmpty) {
+      return false;
+    }
+    try {
+      final result = await _platform.invokeMethod<bool>('isFileFullyDownloaded', <String, dynamic>{
+        'path': filePath,
+      });
+      return result ?? false;
+    } catch (e) {
+      return false;
     }
   }
 }

@@ -7,6 +7,7 @@ Flutter plugin for iCloud Drive integration on iOS. Provides access to iCloud Do
 - ✅ iCloud Drive integration for iOS
 - ✅ Automatic file synchronization (handled by iOS)
 - ✅ Automatic fallback to local storage
+- ✅ File download completeness check (iOS)
 - 🔜 Google Drive support for Android (coming soon)
 
 ## Installation
@@ -111,6 +112,12 @@ if (docsPath != null) {
   // Files saved here will be automatically synced by iOS
   final file = File('$docsPath/myfile.pdf');
   await file.writeAsBytes(data);
+
+  // Ensure file finished downloading from iCloud before opening
+  final isReady = await CloudStorageSync.instance.isFileFullyDownloaded(file.path);
+  if (!isReady) {
+    // Wait/retry or notify user
+  }
 } else {
   // Fallback to local storage
   final appDir = await getApplicationDocumentsDirectory();
