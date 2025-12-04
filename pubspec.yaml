@@ -1,6 +1,6 @@
 name: cloud_storage_sync
 description: "Flutter plugin for cloud storage synchronization (iCloud on iOS, Google Drive on Android). Provides database and file sync with status tracking."
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/tsitser/cloud_storage_sync
 
 environment:

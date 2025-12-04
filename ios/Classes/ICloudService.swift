@@ -26,6 +26,7 @@ import Flutter
     }
 
     /// Проверяет, полностью ли загружен файл из iCloud
+    /// Возвращает true если файл полностью скачан и доступен локально
     @objc public static func isFileFullyDownloaded(path: String) -> Bool {
         let fileURL = URL(fileURLWithPath: path)
         let fileManager = FileManager.default
@@ -40,25 +41,18 @@ import Flutter
         }
 
         do {
-            let resourceValues = try fileURL.resourceValues(forKeys: [
-                .ubiquitousItemIsDownloadedKey,
-                .ubiquitousItemDownloadingStatusKey,
-                .ubiquitousItemPercentDownloadedKey,
-            ])
-
-            if let isDownloaded = resourceValues.ubiquitousItemIsDownloaded, !isDownloaded {
-                return false
-            }
-
-            if let percent = resourceValues.ubiquitousItemPercentDownloaded?.doubleValue, percent < 100.0 {
-                return false
-            }
+            // Используем только ubiquitousItemDownloadingStatusKey - он доступен в iOS
+            let resourceValues = try fileURL.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
 
             if let status = resourceValues.ubiquitousItemDownloadingStatus {
+                // .current означает, что файл полностью загружен и актуален
+                // .notDownloaded - файл только в облаке (placeholder)
+                // .downloaded - файл загружен, но может быть не актуален
                 return status == URLUbiquitousItemDownloadingStatus.current
             }
 
-            return true
+            // Если статус недоступен, пробуем читать файл для проверки
+            return fileManager.isReadableFile(atPath: fileURL.path)
         } catch {
             return false
         }
