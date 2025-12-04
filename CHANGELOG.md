@@ -1,5 +1,9 @@
 # Cloud Storage Sync
 
+## 0.0.5
+
+* Added `localNotUploaded` status to `FileDownloadStatus` enum
+
 ## 0.0.4
 
 * Added `getFileDownloadStatus` API to get the status of a file download from iCloud

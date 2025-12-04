@@ -12,6 +12,8 @@ enum FileDownloadStatus {
   notDownloaded,
   /// Локальный файл (не iCloud)
   local,
+  /// Файл создан локально, но еще не загружен в облако
+  localNotUploaded,
   /// Файл не найден
   notFound,
   /// Неизвестный статус
@@ -26,19 +28,28 @@ class FileDownloadInfo {
     required this.status,
     required this.isDownloading,
     required this.downloadRequested,
+    required this.isUploading,
+    required this.isUploaded,
     required this.isUbiquitous,
     required this.fileSize,
+    required this.isReadable,
     this.error,
   });
 
   /// Статус загрузки файла
   final FileDownloadStatus status;
 
-  /// Идет ли загрузка сейчас
+  /// Идет ли загрузка ИЗ облака сейчас
   final bool isDownloading;
 
-  /// Была ли запрошена загрузка
+  /// Была ли запрошена загрузка ИЗ облака
   final bool downloadRequested;
+
+  /// Идет ли загрузка В облако сейчас
+  final bool isUploading;
+
+  /// Загружен ли файл В облако
+  final bool isUploaded;
 
   /// Является ли файл iCloud-файлом
   final bool isUbiquitous;
@@ -46,20 +57,26 @@ class FileDownloadInfo {
   /// Размер файла в байтах
   final int fileSize;
 
+  /// Можно ли открыть файл для чтения (реальная проверка доступности)
+  final bool isReadable;
+
   /// Сообщение об ошибке (если есть)
   final String? error;
 
-  /// Файл доступен для использования (загружен локально)
+  /// Файл доступен для использования (загружен локально или создан локально)
   bool get isAvailable =>
       status == FileDownloadStatus.current ||
       status == FileDownloadStatus.downloaded ||
-      status == FileDownloadStatus.local;
+      status == FileDownloadStatus.local ||
+      status == FileDownloadStatus.localNotUploaded ||
+      isReadable;
 
   @override
   String toString() {
     return 'FileDownloadInfo(status: $status, isDownloading: $isDownloading, '
-        'downloadRequested: $downloadRequested, isUbiquitous: $isUbiquitous, '
-        'fileSize: $fileSize, error: $error)';
+        'downloadRequested: $downloadRequested, isUploading: $isUploading, '
+        'isUploaded: $isUploaded, isUbiquitous: $isUbiquitous, '
+        'fileSize: $fileSize, isReadable: $isReadable, error: $error)';
   }
 }
 
@@ -132,8 +149,11 @@ class CloudStorageServiceImpl implements CloudStorageService {
         status: status,
         isDownloading: result['isDownloading'] as bool? ?? false,
         downloadRequested: result['downloadRequested'] as bool? ?? false,
+        isUploading: result['isUploading'] as bool? ?? false,
+        isUploaded: result['isUploaded'] as bool? ?? false,
         isUbiquitous: result['isUbiquitous'] as bool? ?? false,
         fileSize: (result['fileSize'] as num?)?.toInt() ?? 0,
+        isReadable: result['isReadable'] as bool? ?? false,
         error: result['error'] as String?,
       );
     } catch (e) {
@@ -151,6 +171,8 @@ class CloudStorageServiceImpl implements CloudStorageService {
         return FileDownloadStatus.notDownloaded;
       case 'local':
         return FileDownloadStatus.local;
+      case 'localNotUploaded':
+        return FileDownloadStatus.localNotUploaded;
       case 'notFound':
         return FileDownloadStatus.notFound;
       case 'error':

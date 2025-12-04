@@ -28,10 +28,13 @@ import Flutter
     /// Получает информацию о статусе загрузки файла из iCloud
     /// Возвращает словарь с информацией:
     /// - "status": "current" | "downloaded" | "notDownloaded" | "local" | "notFound" | "error"
-    /// - "isDownloading": Bool - идет ли загрузка сейчас
-    /// - "downloadRequested": Bool - была ли запрошена загрузка
+    /// - "isDownloading": Bool - идет ли загрузка ИЗ облака сейчас
+    /// - "downloadRequested": Bool - была ли запрошена загрузка ИЗ облака
+    /// - "isUploading": Bool - идет ли загрузка В облако сейчас
+    /// - "isUploaded": Bool - загружен ли файл В облако
     /// - "isUbiquitous": Bool - является ли файл iCloud-файлом
     /// - "fileSize": Int64 - размер файла (если доступен)
+    /// - "isReadable": Bool - можно ли открыть файл для чтения
     @objc public static func getFileDownloadStatus(path: String) -> [String: Any] {
         let fileURL = URL(fileURLWithPath: path)
         let fileManager = FileManager.default
@@ -42,8 +45,11 @@ import Flutter
                 "status": "notFound",
                 "isDownloading": false,
                 "downloadRequested": false,
+                "isUploading": false,
+                "isUploaded": false,
                 "isUbiquitous": false,
-                "fileSize": 0
+                "fileSize": 0,
+                "isReadable": false
             ]
         }
 
@@ -60,8 +66,11 @@ import Flutter
                 "status": "local",
                 "isDownloading": false,
                 "downloadRequested": false,
+                "isUploading": false,
+                "isUploaded": false,
                 "isUbiquitous": false,
-                "fileSize": fileSize
+                "fileSize": fileSize,
+                "isReadable": true
             ]
         }
 
@@ -71,12 +80,25 @@ import Flutter
                 .ubiquitousItemDownloadingStatusKey,
                 .ubiquitousItemIsDownloadingKey,
                 .ubiquitousItemDownloadRequestedKey,
+                .ubiquitousItemIsUploadingKey,
+                .ubiquitousItemIsUploadedKey,
                 .fileSizeKey
             ])
 
             let isDownloading = resourceValues.ubiquitousItemIsDownloading ?? false
             let downloadRequested = resourceValues.ubiquitousItemDownloadRequested ?? false
+            let isUploading = resourceValues.ubiquitousItemIsUploading ?? false
+            let isUploaded = resourceValues.ubiquitousItemIsUploaded ?? false
             let fileSize = resourceValues.fileSize ?? 0
+            
+            // Проверяем, можно ли реально открыть файл для чтения
+            var isReadable = false
+            if let fileHandle = try? FileHandle(forReadingFrom: fileURL) {
+                // Пробуем прочитать первые байты (используем старый API для совместимости)
+                let data = fileHandle.readData(ofLength: 1)
+                isReadable = !data.isEmpty
+                fileHandle.closeFile()
+            }
 
             var status = "unknown"
             if let downloadStatus = resourceValues.ubiquitousItemDownloadingStatus {
@@ -85,7 +107,13 @@ import Flutter
                 } else if downloadStatus == .downloaded {
                     status = "downloaded"
                 } else if downloadStatus == .notDownloaded {
-                    status = "notDownloaded"
+                    // Если статус notDownloaded, но файл читаемый - 
+                    // это файл, созданный локально и еще не синхронизированный
+                    if isReadable {
+                        status = "localNotUploaded"
+                    } else {
+                        status = "notDownloaded"
+                    }
                 }
             }
 
@@ -93,16 +121,22 @@ import Flutter
                 "status": status,
                 "isDownloading": isDownloading,
                 "downloadRequested": downloadRequested,
+                "isUploading": isUploading,
+                "isUploaded": isUploaded,
                 "isUbiquitous": true,
-                "fileSize": fileSize
+                "fileSize": fileSize,
+                "isReadable": isReadable
             ]
         } catch {
             return [
                 "status": "error",
                 "isDownloading": false,
                 "downloadRequested": false,
+                "isUploading": false,
+                "isUploaded": false,
                 "isUbiquitous": true,
                 "fileSize": 0,
+                "isReadable": false,
                 "error": error.localizedDescription
             ]
         }
